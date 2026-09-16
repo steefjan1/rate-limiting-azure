@@ -1,0 +1,9 @@
+bin/
+obj/
+.vs/
+.azure/
+*.user
+*.swp
+.env
+results*.md
+!docs/load-test-results.md

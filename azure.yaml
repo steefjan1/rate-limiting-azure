@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+name: rate-limiting-azure
+metadata:
+  template: rate-limiting-azure@0.1.0
+services:
+  api:
+    project: ./src/RateLimiting.Api
+    language: dotnet
+    host: containerapp
+    docker:
+      path: ./Dockerfile
+      context: .
+      # Build the image in Azure Container Registry (ACR Tasks) instead of locally.
+      # No Docker Desktop needed on the dev machine.
+      remoteBuild: true

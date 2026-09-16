@@ -1,0 +1,41 @@
+<!--
+  Gateway layer. Two of the six algorithms live here, and neither is written by you.
+
+  rate-limit-by-key   Classic tiers: sliding window. v2 tiers (this sample): token bucket.
+                      Same XML, different algorithm depending on the SKU you picked.
+                      Counters are per gateway node and are never aggregated.
+  limit-concurrency   A concurrency limiter around the call to the backend.
+
+  The gateway also decides WHO is being limited: here the subscription. It forwards that
+  identity to the API as X-Client-Id so the service layer partitions on the same key.
+-->
+<policies>
+  <inbound>
+    <base />
+    <set-header name="X-Client-Id" exists-action="override">
+      <value>@(context.Subscription?.Id ?? context.Request.IpAddress)</value>
+    </set-header>
+    <!-- Per-subscription request rate. Loose enough that the service-layer limiters are the ones you see in the load test. -->
+    <rate-limit-by-key calls="600"
+                       renewal-period="60"
+                       counter-key="@(context.Subscription?.Id ?? context.Request.IpAddress)"
+                       increment-condition="@(context.Response == null || context.Response.StatusCode < 400)"
+                       remaining-calls-header-name="X-RateLimit-Remaining"
+                       retry-after-header-name="Retry-After" />
+  </inbound>
+  <backend>
+    <!-- At most 20 calls in flight toward the backend per subscription. Excess gets 429 from the gateway. -->
+    <limit-concurrency key="@(context.Subscription?.Id ?? context.Request.IpAddress)" max-count="20">
+      <forward-request timeout="30" />
+    </limit-concurrency>
+  </backend>
+  <outbound>
+    <base />
+    <set-header name="X-Gateway" exists-action="override">
+      <value>apim</value>
+    </set-header>
+  </outbound>
+  <on-error>
+    <base />
+  </on-error>
+</policies>

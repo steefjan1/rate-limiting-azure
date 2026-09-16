@@ -1,0 +1,30 @@
+<!--
+  Not deployed by this sample. Included because request counters count requests, and for
+  an AI backend the unit that hurts is tokens, not requests. One chat call can cost 200
+  tokens or 200,000. APIM's llm-token-limit policy (OpenAI, Anthropic Messages, Vertex AI
+  backends) is the same token-bucket idea with a different currency.
+
+  429 when tokens-per-minute is exceeded, 403 when the quota is exhausted.
+-->
+<policies>
+  <inbound>
+    <base />
+    <llm-token-limit counter-key="@(context.Subscription.Id)"
+                     tokens-per-minute="20000"
+                     token-quota="1000000"
+                     token-quota-period="Monthly"
+                     estimate-prompt-tokens="true"
+                     remaining-tokens-header-name="X-Tokens-Remaining"
+                     remaining-quota-tokens-header-name="X-Quota-Tokens-Remaining"
+                     tokens-consumed-header-name="X-Tokens-Consumed" />
+  </inbound>
+  <backend>
+    <base />
+  </backend>
+  <outbound>
+    <base />
+  </outbound>
+  <on-error>
+    <base />
+  </on-error>
+</policies>
